@@ -1,0 +1,5 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Base.Theme.MiMarket" parent="Theme.Material3.DayNight.NoActionBar" />
+
+    <style name="Theme.MiMarket" parent="Base.Theme.MiMarket" />
+</resources>

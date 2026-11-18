@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// =====================================================================================
+// Mi Market - Reglas de seguridad de Firebase Storage (Semana 5)
+// Se pegan en: Consola de Firebase > Storage > Reglas > Publicar
+// Las imágenes de productos se guardan en:  productos/{uid}/{archivo}
+// =====================================================================================
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /productos/{uid}/{archivo} {
+      // Solo los usuarios autenticados pueden ver las imágenes del catálogo.
+      allow read: if request.auth != null;
+
+      // Cada usuario solo puede subir a SU carpeta, solo imágenes y de hasta 5 MB.
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      // Solo el dueño de la carpeta puede borrar sus imágenes.
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Cualquier otra ruta queda DENEGADA por defecto.
+  }
+}

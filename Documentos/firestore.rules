@@ -1,0 +1,106 @@
+rules_version = '2';
+
+// =====================================================================================
+// Mi Market - Reglas de seguridad de Cloud Firestore (Semana 5)
+// Se pegan en: Consola de Firebase > Firestore Database > Reglas > Publicar
+// =====================================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Funciones auxiliares ----------
+
+    // Hay un usuario con sesión iniciada en Firebase Authentication.
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    // El usuario autenticado es el dueño del documento usuarios/{uid}.
+    function esPropietario(uid) {
+      return autenticado() && request.auth.uid == uid;
+    }
+
+    // El usuario tiene rol "admin" en su documento usuarios/{uid}.
+    // (El rol solo se puede asignar desde la consola de Firebase.)
+    function esAdmin() {
+      return autenticado()
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
+    }
+
+    // Validación de datos de un producto (no confiar solo en la validación de la app).
+    function productoValido() {
+      return request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && request.resource.data.nombre.size() <= 100
+        && request.resource.data.precio is number
+        && request.resource.data.precio > 0
+        && request.resource.data.stock is int
+        && request.resource.data.stock >= 0;
+    }
+
+    // Una compra solo puede DESCONTAR stock: no toca ningún otro campo y el stock nunca queda negativo.
+    function soloDescuentaStock() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock'])
+        && request.resource.data.stock is int
+        && request.resource.data.stock >= 0
+        && request.resource.data.stock < resource.data.stock;
+    }
+
+    // ---------- productos/{productoId} : catálogo ----------
+    match /productos/{productoId} {
+      // 1) Solo los usuarios autenticados pueden leer el catálogo.
+      allow read: if autenticado();
+
+      // Crear: autenticado, datos válidos y el producto queda a nombre de quien lo crea.
+      allow create: if autenticado()
+        && productoValido()
+        && request.resource.data.creadorUid == request.auth.uid;
+
+      // 2) Solo el creador del producto (o un administrador) puede editarlo.
+      //    El creador no puede "regalar" el producto cambiando creadorUid.
+      //    Excepción controlada: cualquier comprador autenticado puede descontar stock.
+      allow update: if autenticado() && (
+        (resource.data.creadorUid == request.auth.uid
+          && request.resource.data.creadorUid == resource.data.creadorUid
+          && productoValido())
+        || (esAdmin() && productoValido())
+        || soloDescuentaStock()
+      );
+
+      // 2) Solo el creador del producto (o un administrador) puede eliminarlo.
+      allow delete: if autenticado()
+        && (resource.data.creadorUid == request.auth.uid || esAdmin());
+    }
+
+    // ---------- tiendas/{tiendaId} : tiendas físicas del mapa ----------
+    match /tiendas/{tiendaId} {
+      allow read: if autenticado();
+      allow write: if esAdmin();
+    }
+
+    // ---------- usuarios/{uid} : datos personales ----------
+    match /usuarios/{uid} {
+      // 3) Cada usuario solo puede leer sus propios datos personales.
+      allow read: if esPropietario(uid);
+
+      // Al registrarse solo puede crearse como "cliente" (nadie se nombra administrador a sí mismo).
+      allow create: if esPropietario(uid)
+        && request.resource.data.rol == 'cliente';
+
+      // Puede actualizar sus datos, pero no cambiar su rol.
+      allow update: if esPropietario(uid)
+        && request.resource.data.rol == resource.data.rol;
+
+      // Derecho de eliminación: puede borrar sus datos personales.
+      allow delete: if esPropietario(uid);
+
+      // ---------- usuarios/{uid}/pedidos/{pedidoId} : historial de compras ----------
+      // 3) Cada usuario solo puede leer y escribir su propio historial de pedidos.
+      match /pedidos/{pedidoId} {
+        allow read, write: if esPropietario(uid);
+      }
+    }
+
+    // Todo lo que no esté declarado arriba queda DENEGADO por defecto.
+  }
+}

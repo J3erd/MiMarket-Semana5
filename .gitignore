@@ -1,0 +1,24 @@
+# ===== Mi Market - archivos que NO se suben a GitHub =====
+
+# Credenciales (se comparten por privado)
+google-services.json
+local.properties
+
+# Android Studio / Gradle (se generan solos al abrir el proyecto)
+.gradle/
+.kotlin/
+build/
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Node.js (se instalan con "npm install")
+node_modules/
+
+# Sistema
+.DS_Store
+Thumbs.db

@@ -1,0 +1,18 @@
+{
+  "name": "mimarket-backend",
+  "version": "1.0.0",
+  "description": "API REST de productos de Mi Market (CRUD) por capas: routes, controllers, data",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

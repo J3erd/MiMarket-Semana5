@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Semana 5 - Seguridad en comunicaciones: toda la app exige HTTPS (Firebase, Google Maps).
+     Solo se permite HTTP sin cifrar hacia el propio equipo de desarrollo, donde corre el
+     backend Node.js de la semana 4 (usado únicamente para importar el catálogo inicial). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>
